@@ -1,62 +1,58 @@
+from flask import Flask, render_template, request, flash, redirect
 import sqlite3
 
-database = sqlite3.connect('datalogin.db')
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
+database = sqlite3.connect('datalogin.db', check_same_thread=False)
 cursor = database.cursor()
 
 cursor.execute("""CREATE TABLE IF NOT EXISTS users (
     login TEXT,
     password TEXT
 )""")
-
 database.commit()
 
-###########################
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        inp_login = request.form.get('login')
+        inp_password = request.form.get('password')
 
-# Вход
-def login_func():
-    inp_login = input("Login: ")
+        if action == 'login':
+            return login_func(inp_login, inp_password)
+        elif action == 'signin':
+            return signin_func(inp_login, inp_password)
+
+    return render_template('index.html')
+
+def login_func(inp_login, inp_password):
     cursor.execute(f"SELECT login FROM users WHERE login = '{inp_login}'")
     if cursor.fetchone() is None:
-        print('Такого пользователя не существует')
-        if input('Зарегистрируйтесь или попробуйте ещё: 1 или 2') == '1':
-            signin_func()
-        else:
-            login_func()
+        flash('Такого пользователя не существует')
+        return redirect('/')
     else:
-        inp_password = input("Password: ")
         cursor.execute(f"SELECT password FROM users WHERE login = '{inp_login}'")
         if cursor.fetchone()[0] == inp_password:
-            print('Вход прошёл успешно')
+            flash('Вход прошёл успешно')
+            return redirect('/')
         else:
-            print('Пароль неверный, попробуйте ещё')
-            login_func()
+            flash('Пароль неверный, попробуйте ещё')
+            return redirect('/')
 
-
-
-# Регистрация
-
-def signin_func():
-
-    inp_login = input("Login: ")
-    inp_password = input("Password: ")
+def signin_func(inp_login, inp_password):
     cursor.execute(f"SELECT login FROM users WHERE login = '{inp_login}'")
     if cursor.fetchone() is None:
         cursor.execute("INSERT INTO users VALUES (?, ?)", (inp_login, inp_password))
         database.commit()
+        flash('Аккаунт успешно создан')
+        return redirect('/')
     else:
-        if input('Такой логин уже существует, войдите в этот аккаунт или создайте новый: 1 или 2: ') == '1':
-            return login_func()
-        else:
-            signin_func()
-            print('Аккаунт успешно создан')
+        flash('Такой логин уже существует')
+        return redirect('/')
 
-############################
-
-if input('Вход или регистрация? 1 или 2?') == '1':
-    login_func()
-
-else:
-    signin_func()
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
