@@ -52,5 +52,12 @@ def signin_func(inp_login, inp_password):
         flash('Такой логин уже существует')
         return redirect('/')
 
-if __name__ == '__main__':
-    app.run(debug=True)
+############################
+
+if input('Вход или регистрация? 1 или 2?') == '1':
+    login_func()
+
+else:
+    signin_func()
+
+
